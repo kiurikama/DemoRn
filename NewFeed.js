@@ -3,13 +3,14 @@ import {
     Platform,TouchableOpacity,
     StyleSheet,
     Text,
-    View,
+    View,TextInput,
     FlatList,
     Image,
     Dimensions,
     Alert
 } from 'react-native';
 import axios from 'axios';
+import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 
 var { width, height } = Dimensions.get('window');
 
@@ -17,15 +18,19 @@ export default class NewFeed extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            isLoading: false,
             newFeed: [],
+            search: ""
         }
     }
 
     componentWillMount() {
+        this.setState({isLoading: true})
         const url = "http://colorme.vn:8000/products"
         axios
             .get(url)
             .then(response => {
+                this.setState({isLoading: false})
                 let data = response.data;
                 this.setState({
                     newFeed: data.products
@@ -35,15 +40,81 @@ export default class NewFeed extends Component {
                 Alert.alert("Bài này", "Lỗi rồi nhé")
             })
     }
+    buttonSearch= ()=>{
+        this.setState({isLoading: true})
+    const url = "http://colorme.vn:8000/products"
+    axios
+      .get(url)
+      .then(response => {
+        this.setState({isLoading: false})
+        let data = response.data;
+        let array = data.products;
+        if (this.state.search == ""){
+          this.setState({
+            newFeed: array
+          });
+        }
+        else{
+          let timkiem  = array.filter((item)=>{return item.title.indexOf(this.state.search) >= 0});
+          this.setState({
+            newFeed: timkiem         
+          });
+        }
+        
+      })
+      .catch(() => {
+        Alert.alert("Bài này", "Lỗi rồi");
+      })
+  
+    }
     render() {
+        let { isLoading } = this.state;
+
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: "#ddbebe"}}>
+            <View style={{flex: 1, backgroundColor: "#c99393", flexDirection:'row'}}>
+                <View style={{flex: 1, justifyContent: "center", alignItems:'center'}}>
+                <TouchableOpacity
+                onPress={()=>{
+                    this.props.navigation.toggleDrawer()
+                }}
+                >
+                    <Icon name="menu" size={30} color="#FFFFFF"/>
+                    </TouchableOpacity>
+                </View>
+                <View style={{flex: 6, 
+                    justifyContent: "center", 
+                    alignItems:'center', 
+                    backgroundColor:'#f7dede', 
+                    borderRadius:20,
+                    margin: 20
+                    }}>
+                <TextInput
+                style={{width: width - 200, height: 50, margin: 10}}
+                placeholder="Search..."
+                clearTextOnFocus={true}
+                underlineColorAndroid="transparent"
+                onChangeText= {(value)=>{
+                    this.setState({search: value})
+                }}
+                />
+                    </View>
+                    <View style={{flex: 1, justifyContent: "center",alignItems:'center'}}>
+                    <TouchableOpacity onPress={this.buttonSearch}>
+                        <Icon name="search" size={30} color="#FFFFFF"/>
+                        </TouchableOpacity>
+                    </View>
+            </View>
+            
+            <View style={{flex: 8}}>
+            { isLoading ?  <Text>Loading...</Text> :
                 <FlatList
                     keyExtractor={(value, index) => { return (index + "") }}
                     data={this.state.newFeed}
                     renderItem={({ item }) => {
                         return (
                             <View style={{ flex: 1, marginTop: 30, alignItems: 'center', borderRadius: 3, backgroundColor: "#ceafaf"}}>
+                                
                                 <View style={{  marginLeft: 30, marginBottom: 10, alignItems: 'center' }}>
                                     <Text style={{color: "black"}}>{item.title}</Text>
                                 </View>
@@ -68,6 +139,9 @@ export default class NewFeed extends Component {
                         )
                     }}
                 />
+                }
+                </View>
+                
             </View>
         );
     }
